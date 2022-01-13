@@ -1,0 +1,7 @@
+welcome: "Welcome to Tic Tac Toe!"
+choose_name: "Please type a name for yourself:"
+goodbye: "Thanks for playing Tic Tac Toe!"
+invalid_input: "Invalid input! Please try again."
+play_again: "Would you like to play again? (y/n)"
+continue_game: "Press enter to continue."
+choose_position: "Please enter an empty position on the board."
