@@ -56,19 +56,51 @@ the effect of each player taking some "response time" to take a turn
   - Moving + marking behavior
   - Player names
   - etc.
-- *Class Dependencies / Number of Classes*
+- **Class Dependencies / Number of Classes**:
+  - Felt like my understanding of how to deal with dependencies, and where to place instance methods/variables, has improved just throughout the creation of this game
+  - That said, I'm certainly still finding it a difficult tradeoff to navigate
   - **Feels like there's no way to "win"**:
-  - Main "issue" in program: some of the classes might not work well in isolation
-  - In my program, I do add two `Player` classes, each w/ behaviors that player would exhibit (I did not take the LS suggestion of removing it)
-  - However, this does add a bit of complexity to the "dependency graph" of my classes:
-    - Game => Board, Player
-    - Board => Square
-    - e.g. `Player` has a dependency on `board` -- even though they aren't *direct collaborators*, the `board` is required to make a move
+    - We want the `Player` class to store player-specific info: marker, name, etc.
+    - But `board` and `player` must interact on **some level**, which introduces dependencies that might be unnecessary
+      - My solution: Not make them direct collaborators, but rather a more indirect dependency through just choosing a square #
+      - Is this any better than a direct board<=>player coupling?
+  - Main "issue" in program: some of the classes might not work well in isolation (requires board)
+  - Decided to keep player and board "tightly coupled": players seemed to be better modeled as objects w/ roles (select square, retrieve name, etc.) -- it wouldn't read as well if all square selection & name retrieval logic were moved to the orchestration class
       - *Alternative*: Remove the `Player` classes, contain the move methods in `Game`
       - But then I lose out on the player-specific functionality, which felt good?
       - How to navigate this dilemma?
-  - *My solution*: Less-tighlty couple the `board` and `player` by **only directly updating board in orchestration class**, but allowing for **square selection** in the player classes
+  - *Why?*
+    - Intuition: Players are modely nicely as objects, each with a similar interface
+    - Polymorphism between `User` and `Computer` (via inheritance): select squares, name retrieval, etc.
+    - Small program => Dependency graph isn't *huge* (not much of an issue)
+    - Adding dependencies was *necessary* for determining the optimal board square
+      - Either the computer needs info about the board OR
+      - the board needs to know about the player to find the optimal square for OR
+      - the game needs to know about the individual squares => `Square` class dependencies
+  - *Another Example*: Retrieving user & computer markers: Decided to keep this logic in the Game class. Why?
+    - Possible markers are more of a game concern => `MARKERS` constant accessible
+    directly in `TTTGame` class
+    - Selection of computer marker *depends* on user marker selection => didn't want to pass the user marker over to the computer class -- felt like this was appropriate to be handled on the game-level
+  - Interesting use: polymorphism w/ human VS computer players
 
 ## Improvements & Bonus Features
 
 - Made `MARKER` an instance variable `@marker` for a given `Player`
+- Extracted commonly used methods (across multiple programs) to modules
+
+## More Improvements
+
+- Bigger board (already implemented)
+- More players (e.g. choose # of computers): computer & human
+  - Appropriate for this assignment
+  - Retrieve player # input on beginning
+  - Question: How would the computer decide who to defend against?
+    - Defensive/offensive algorithms would be more complicated...
+  - Update players instance variable to contain an array of players (humans &
+  computers)
+    - Good use of **polymorphism**: any player
+  - Update computer algorithm to handle multiple players
+    - Offensive *first*
+    - Defensive *second*, looping through multiple players to defend
+    - Middle square
+    - Random
