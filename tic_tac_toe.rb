@@ -82,6 +82,7 @@ class TTTGame
       prompt_to_continue
       reset
       play_match
+      refresh_final_winner
       break if game_finished?
     end
 
