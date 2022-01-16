@@ -1,7 +1,8 @@
 # Tic Tac Toe
 
 require 'yaml'
-require 'pry'
+
+class NoResultError < StandardError; end
 
 module Gameplay
   MESSAGES = YAML.load_file('messages.yml')
@@ -35,7 +36,6 @@ end
 
 module Nameable
   def retrieve_name
-    system('clear')
     name = ''
 
     loop do
@@ -63,19 +63,17 @@ end
 class TTTGame
   include Gameplay
 
-  MARKERS = ['X', 'O']
   WINNING_SCORE = 3
 
   def initialize
-    @user = TTTUser.new(retrieve_user_marker)
-    @computer = TTTComputer.new(retrieve_computer_marker)
+    @players = []
+    retrieve_players
     @board_size = retrieve_board_size
     @board = Board.new(board_size)
-    @current_player = retrieve_first_player
+    @current_player = players.sample
     @result = nil
+    @final_winner = nil
   end
-
-  # MAIN METHODS
 
   def play
     display_welcome_message
@@ -93,26 +91,85 @@ class TTTGame
 
   private
 
-  def game_finished?
-    !!final_winner
+  def play_match
+    display_game_state
+
+    loop do
+      take_turn
+      break if match_finished?
+      alternate_player
+    end
+
+    update_scores
+    display_result
   end
 
-  def retrieve_user_marker
-    clear
+  def reset
+    board.reset
+    self.current_player = players.sample
+    self.result = nil
+  end
+
+  # INPUT RETRIEVAL
+
+  def retrieve_players
+    loop do
+      clear
+      players << create_player
+      break unless players.length < 2 || add_another_player?
+    end
+  end
+
+  def create_player
+    type = retrieve_player_type
+    marker = retrieve_marker
+    type == 'human' ? TTTUser.new(marker) : TTTComputer.new(marker)
+  end
+
+  def retrieve_player_type
+    player_type = nil
+
+    loop do
+      message("human_or_computer")
+      player_type = gets.chomp.downcase
+      break if %w(human computer).include?(player_type)
+      message("invalid_input")
+    end
+
+    player_type
+  end
+
+  # rubocop:disable Metrics/MethodLength
+  def retrieve_marker
     marker = nil
 
     loop do
-      message("choose_marker")
+      message("enter_marker")
       marker = gets.chomp
-      break if MARKERS.include?(marker)
-      message("invalid_input")
+
+      if marker.length != 1
+        message("invalid_marker")
+      elsif players.map(&:marker).include?(marker)
+        message("taken_marker")
+      else
+        break
+      end
     end
 
     marker
   end
+  # rubocop:enable Metrics/MethodLength
 
-  def retrieve_computer_marker
-    MARKERS.reject { |marker| marker == user.marker }.first
+  def add_another_player?
+    answer = ''
+    loop do
+      message("another_player")
+      answer = gets.chomp.downcase
+      break if %w(y yes n no).include?(answer)
+      message("invalid_input")
+    end
+
+    !!(answer == 'y' || answer == 'yes')
   end
 
   def retrieve_board_size
@@ -132,28 +189,7 @@ class TTTGame
     input.to_i.to_s == input
   end
 
-  def retrieve_first_player
-    [user, computer].sample
-  end
-
-  def reset
-    board.reset
-    self.current_player = retrieve_first_player
-    self.result = nil
-  end
-
-  def play_match
-    display_game_state
-
-    loop do
-      take_turn
-      break if match_finished?
-      alternate_player
-    end
-
-    update_scores
-    display_result
-  end
+  # GAMEPLAY
 
   def take_turn
     square_number = current_player.select_square(board)
@@ -173,39 +209,31 @@ class TTTGame
   end
 
   def update_scores
-    case result
-    when user then user.increment_score
-    when computer then computer.increment_score
-    end
-  end
-
-  def match_finished?
-    !!result
+    result.increment_score if [TTTUser, TTTComputer].include?(result.class)
   end
 
   def alternate_player
-    self.current_player = current_player == user ? computer : user
+    index = (players.index(current_player) + 1) % players.length
+    self.current_player = players[index]
   end
 
-  # DISPLAY METHODS
+  # DISPLAY
 
   def display_game_state(clear_screen: true)
     clear if clear_screen
-    display_marker_info
     display_score
     puts
     display_tutorial
     display_board
   end
 
-  def display_marker_info
-    prompt("You're #{user.marker}. The computer is #{computer.marker}.")
+  def display_score
+    prompt(score_message)
   end
 
-  def display_board
-    puts "Current Board:\n\n"
-    board.display
-    puts
+  def score_message
+    "CURRENT SCORES: "\
+    "#{players.map { |player| "#{player.name}: #{player.score}" }.join(', ')}"
   end
 
   def display_tutorial
@@ -214,22 +242,22 @@ class TTTGame
     puts
   end
 
+  def display_board
+    puts "Current Board:\n\n"
+    board.display
+    puts
+  end
+
   def display_result
     display_score
     prompt(result_message)
   end
 
-  def display_score
-    prompt("The score is #{user.score} (#{user.name}) "\
-          "to #{computer.score} (#{computer.name})")
-  end
-
   def result_message
     case result
-    when :tie then "You tied!"
-    when user then "#{user.name} won!"
-    when computer then "#{computer.name} won!"
-    else raise "The result was never computed!"
+    when :tie then "It's a tie!"
+    when TTTPlayer then "#{result.name} won!"
+    else raise NoResultError, "The result was never computed!"
     end
   end
 
@@ -238,23 +266,31 @@ class TTTGame
     prompt("#{final_winner.name} is the final winner!")
   end
 
-  def final_winner
-    if user.score == WINNING_SCORE
-      user
-    elsif computer.score == WINNING_SCORE
-      computer
-    end
+  # HELPERS
+
+  def match_finished?
+    !!result
   end
 
-  attr_reader :board, :user, :computer, :board_size
-  attr_accessor :result, :current_player
+  def game_finished?
+    !!final_winner
+  end
+
+  def refresh_final_winner
+    self.final_winner = players.find { |player| player.score == WINNING_SCORE }
+  end
+
+  attr_reader :board, :players, :board_size
+  attr_accessor :result, :current_player, :final_winner
 end
 
 class TTTPlayer
+  include Nameable, Gameplay
+
   attr_reader :name, :marker, :score
 
-  def initialize(name, marker)
-    @name = name
+  def initialize(marker)
+    @name = retrieve_name
     @marker = marker
     @score = 0
   end
@@ -269,18 +305,14 @@ class TTTPlayer
 end
 
 class TTTUser < TTTPlayer
-  include Gameplay, Nameable, Stringable
-
-  def initialize(marker)
-    super(retrieve_name, marker)
-  end
+  include Stringable
 
   def select_square(board)
     square_number = nil
     square_numbers = board.remaining_square_numbers
 
     loop do
-      prompt("Choose an empty square "\
+      prompt("#{name}'s turn: Choose an empty square "\
              "(#{joinor(square_numbers)})")
       square_number = gets.chomp.to_i
       break if square_numbers.include?(square_number)
@@ -294,17 +326,13 @@ end
 class TTTComputer < TTTPlayer
   RESPONSE_TIME = 1
 
-  def initialize(marker)
-    super('Computer', marker)
-  end
-
   def select_square(board)
     sleep(RESPONSE_TIME)
 
-    board.square_to_win(self) || # Offensive
-      board.square_to_lose(self) || # Defensive
-      board.remaining_middle_square ||
-      board.remaining_square_numbers.sample
+    board.square_to_win(self) ||            # Offensive
+      board.square_to_lose(self) ||         # Defensive
+      board.remaining_middle_square ||      # Middle Square
+      board.remaining_square_numbers.sample # Random
   end
 end
 
@@ -312,16 +340,6 @@ class Board
   def initialize(size)
     @size = size
     reset
-  end
-
-  # Copying
-
-  def copy
-    (0...size).each_with_object(self.class.new(size)) do |row_index, new_board|
-      (0...size).each do |col_index|
-        new_board.rows[row_index][col_index] = rows[row_index][col_index].dup
-      end
-    end
   end
 
   def reset
@@ -348,8 +366,16 @@ class Board
   end
 
   def square_to_lose(player)
-    other_player = squares.map(&:player).reject { |p| p == player }.first
-    square_to_win(other_player) if other_player
+    opposing_players(player).each do |other_player|
+      winning_square = square_to_win(other_player)
+      return winning_square if winning_square
+    end
+
+    nil
+  end
+
+  def opposing_players(player)
+    squares.map(&:player).reject { |p| p == player }.compact
   end
 
   def remaining_middle_square
@@ -400,8 +426,6 @@ class Board
     end
   end
 
-  private
-
   def display_row(row)
     print "|"
     row.each { |square| print "#{square}|" }
@@ -410,7 +434,13 @@ class Board
 
   # AUXILIARY METHODS
 
-  public
+  def copy
+    (0...size).each_with_object(self.class.new(size)) do |row_index, new_board|
+      (0...size).each do |col_index|
+        new_board.rows[row_index][col_index] = rows[row_index][col_index].dup
+      end
+    end
+  end
 
   def remaining_square_numbers
     squares.map.with_index do |square, index|

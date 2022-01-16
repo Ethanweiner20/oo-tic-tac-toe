@@ -82,6 +82,14 @@ the effect of each player taking some "response time" to take a turn
     directly in `TTTGame` class
     - Selection of computer marker *depends* on user marker selection => didn't want to pass the user marker over to the computer class -- felt like this was appropriate to be handled on the game-level
   - Interesting use: polymorphism w/ human VS computer players
+- *What should be included in `initialize`*
+  - Many parts of "initializing" the game require a good amount of work -- input retrieval, etc.
+  - I decided to perform much of the `TTTGame` initialization in the `initialize` method itself, simply because it made sense from a naming perspective
+  - I'm wondering if this is generally regarded as a good practice
+    - Initialize to trivial values first, and then complete the full game setup somewhere else (e.g. in the `play` method)?
+- Using more instance variables as a cache
+  - e.g. `@final_winner` and `@result`
+  - From a structural level, `TTTGame` does *have* a `@final_winner` and `@result` -- but only at certain points during the game. Most of the time, their value is simply `nil`. Is this a way that instance variables are commonly used?
 
 ## Improvements & Bonus Features
 
@@ -96,11 +104,12 @@ the effect of each player taking some "response time" to take a turn
   - Retrieve player # input on beginning
   - Question: How would the computer decide who to defend against?
     - Defensive/offensive algorithms would be more complicated...
-  - Update players instance variable to contain an array of players (humans &
-  computers)
+  1. Update players instance variable to contain an array of players (humans &
+  computers) X
     - Good use of **polymorphism**: any player
-  - Update computer algorithm to handle multiple players
-    - Offensive *first*
-    - Defensive *second*, looping through multiple players to defend
+  2. Update existing methods to handle more than two users (e.g. display methods) X
+  3. Update computer algorithm to handle multiple players X
+    - Offensive *first* 
+    - Defensive *second*, looping through multiple players to defend X
     - Middle square
     - Random
