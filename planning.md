@@ -113,3 +113,25 @@ the effect of each player taking some "response time" to take a turn
     - Defensive *second*, looping through multiple players to defend X
     - Middle square
     - Random
+
+## Improvements
+- Single-character markers: don't accept spaces X
+- Validate integer retrieval for board sizes X
+- Display score on a move-by-move basis X (display at bottom)
+- Add an option to play the entire game again X
+- Fix line endings for strings: use \n instead of \n\n
+- Considering adding a `Match` class to track game history & results? (<== include `Match` class from RPS?)
+  - Consider tradeoffs
+- `TutorialBoard` unnecessary inheritance options:
+  - Create a more generic `Board` class to encapsulate commonly used methods
+  - Create two separate classes, each of which uses a module for display purposes (same methods for displaying)
+
+## Code Review Response
+- Sorry I keep forgetting to improve some small UI improvements1 I guess I'm just so focused on the gmae itself
+- Already displayed the score on the top -- however I moved it to a more seeable place
+- *Question*: Testing techniques?
+  - With larger programs, it can take quite long and make it harder to track down bugs by testing the final result each time (i.e. running the enginge class)
+  - With a more functional style programming, it's easier to test b/c we can test the function in isolation
+  - So far, we haven't been given many guidelines for going forward
+  - Do you have any tips for how to test our OO programs at this stage in the LS program? Ruby-specific tips or general LS advice?
+  - Perhaps, could you even hint me at what sort of testing techniques we might encounter later in the LS curriculum? I'm faimiliar with *unit testing* (i.e. testing the functionality in an isolated manner by testing code in smaller units (e.g. classes))

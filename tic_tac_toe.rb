@@ -32,6 +32,19 @@ module Gameplay
   def clear
     system('clear')
   end
+
+  def play_again?
+    answer = nil
+
+    loop do
+      message("play_again")
+      answer = gets.chomp.downcase
+      break if %(y n).include?(answer)
+      message("invalid_input")
+    end
+
+    answer == 'y'
+  end
 end
 
 module Nameable
@@ -60,8 +73,14 @@ module Stringable
   end
 end
 
+module Validation
+  def valid_integer?(input)
+    input.to_i.to_s == input
+  end
+end
+
 class TTTGame
-  include Gameplay
+  include Gameplay, Validation
 
   WINNING_SCORE = 3
 
@@ -79,6 +98,18 @@ class TTTGame
     display_welcome_message
 
     loop do
+      play_game
+      break unless play_again?
+    end
+
+    display_goodbye_message
+  end
+
+  private
+
+  def play_game
+
+    loop do
       prompt_to_continue
       reset
       play_match
@@ -87,10 +118,7 @@ class TTTGame
     end
 
     display_final_result
-    display_goodbye_message
   end
-
-  private
 
   def play_match
     display_game_state
@@ -148,7 +176,7 @@ class TTTGame
       message("enter_marker")
       marker = gets.chomp
 
-      if marker.length != 1
+      if marker.length != 1 || marker == ' '
         message("invalid_marker")
       elsif players.map(&:marker).include?(marker)
         message("taken_marker")
@@ -186,10 +214,6 @@ class TTTGame
     answer.to_i
   end
 
-  def valid_integer?(input)
-    input.to_i.to_s == input
-  end
-
   # GAMEPLAY
 
   def take_turn
@@ -222,10 +246,10 @@ class TTTGame
 
   def display_game_state(clear_screen: true)
     clear if clear_screen
-    display_score
     puts
     display_tutorial
     display_board
+    display_score
   end
 
   def display_score
@@ -238,19 +262,21 @@ class TTTGame
   end
 
   def display_tutorial
-    puts "Position Numbers:\n\n"
+    puts "Position Numbers:\n"
+    puts
     TutorialBoard.new(board_size).display
     puts
   end
 
   def display_board
-    puts "Current Board:\n\n"
+    puts "Current Board:\n"
+    puts
     board.display
     puts
   end
 
   def display_result
-    display_score
+    display_game_state
     prompt(result_message)
   end
 
@@ -306,21 +332,21 @@ class TTTPlayer
 end
 
 class TTTUser < TTTPlayer
-  include Stringable
+  include Stringable, Validation
 
   def select_square(board)
-    square_number = nil
+    answer = nil
     square_numbers = board.remaining_square_numbers
 
     loop do
       prompt("#{name}'s turn: Choose an empty square "\
              "(#{joinor(square_numbers)})")
-      square_number = gets.chomp.to_i
-      break if square_numbers.include?(square_number)
+      answer = gets.chomp
+      break if valid_integer?(answer) && square_numbers.include?(answer.to_i)
       message("invalid_input")
     end
 
-    square_number
+    answer.to_i
   end
 end
 
