@@ -135,3 +135,9 @@ the effect of each player taking some "response time" to take a turn
   - So far, we haven't been given many guidelines for going forward
   - Do you have any tips for how to test our OO programs at this stage in the LS program? Ruby-specific tips or general LS advice?
   - Perhaps, could you even hint me at what sort of testing techniques we might encounter later in the LS curriculum? I'm faimiliar with *unit testing* (i.e. testing the functionality in an isolated manner by testing code in smaller units (e.g. classes))
+- Breaking up the game into individual "matches" was an obvious improvement
+  - Surprised I didn't see this while programming -- a "match" is quite an obvious noun
+  - This was an instance where separation into classes was more of a clear no-brainer
+  - Also showed me how OOP's powerful collaborative abilities almost *sets you up* to handle complexity: A singular object (such as a *game*) can, by extension through collaboration, store so much data (such as individual *match* objects)
+    - e.g. If I wanted to add history to the game
+- Still used temporary instance variables for separation though...

@@ -88,9 +88,6 @@ class TTTGame
     @players = []
     retrieve_players
     @board_size = retrieve_board_size
-    @board = Board.new(board_size)
-    @current_player = players.sample
-    @result = nil
     @final_winner = nil
   end
 
@@ -108,11 +105,12 @@ class TTTGame
   private
 
   def play_game
-
     loop do
       prompt_to_continue
-      reset
-      play_match
+      match = TTTMatch.new(board_size, players)
+      match.play
+      update_scores(match.result)
+      match.display_result
       refresh_final_winner
       break if game_finished?
     end
@@ -120,23 +118,10 @@ class TTTGame
     display_final_result
   end
 
-  def play_match
-    display_game_state
-
-    loop do
-      take_turn
-      break if match_finished?
-      alternate_player
+  def update_scores(result)
+    case result
+    when TTTUser, TTTComputer then result.increment_score
     end
-
-    update_scores
-    display_result
-  end
-
-  def reset
-    board.reset
-    self.current_player = players.sample
-    self.result = nil
   end
 
   # INPUT RETRIEVAL
@@ -214,6 +199,49 @@ class TTTGame
     answer.to_i
   end
 
+  # GAME STATUS
+
+  def game_finished?
+    !!final_winner
+  end
+
+  def refresh_final_winner
+    self.final_winner = players.find { |player| player.score == WINNING_SCORE }
+  end
+
+  # DISPLAY
+
+  def display_final_result
+    prompt_to_continue
+    prompt("#{final_winner.name} is the final winner!")
+  end
+
+  attr_reader :players, :board_size
+  attr_accessor :final_winner
+end
+
+class TTTMatch
+  include Gameplay
+
+  attr_reader :result
+
+  def initialize(board_size, players)
+    @board = Board.new(board_size)
+    @players = players
+    @current_player = players.sample
+    @result = nil
+  end
+
+  def play
+    display_game_state
+
+    loop do
+      take_turn
+      break if match_finished?
+      alternate_player
+    end
+  end
+
   # GAMEPLAY
 
   def take_turn
@@ -231,10 +259,6 @@ class TTTGame
     elsif board.full?
       self.result = :tie
     end
-  end
-
-  def update_scores
-    result.increment_score if [TTTUser, TTTComputer].include?(result.class)
   end
 
   def alternate_player
@@ -264,7 +288,7 @@ class TTTGame
   def display_tutorial
     puts "Position Numbers:\n"
     puts
-    TutorialBoard.new(board_size).display
+    TutorialBoard.new(board.size).display
     puts
   end
 
@@ -288,27 +312,15 @@ class TTTGame
     end
   end
 
-  def display_final_result
-    prompt_to_continue
-    prompt("#{final_winner.name} is the final winner!")
-  end
-
   # HELPERS
 
   def match_finished?
     !!result
   end
 
-  def game_finished?
-    !!final_winner
-  end
-
-  def refresh_final_winner
-    self.final_winner = players.find { |player| player.score == WINNING_SCORE }
-  end
-
-  attr_reader :board, :players, :board_size
-  attr_accessor :result, :current_player, :final_winner
+  attr_reader :board, :players
+  attr_writer :result
+  attr_accessor :current_player
 end
 
 class TTTPlayer
@@ -364,6 +376,8 @@ class TTTComputer < TTTPlayer
 end
 
 class Board
+  attr_reader :size
+
   def initialize(size)
     @size = size
     reset
@@ -498,7 +512,6 @@ class Board
 
   protected
 
-  attr_reader :size
   attr_accessor :rows
 end
 
