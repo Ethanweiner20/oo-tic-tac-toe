@@ -226,7 +226,7 @@ class TTTMatch
   attr_reader :result
 
   def initialize(board_size, players)
-    @board = Board.new(board_size)
+    @board = GameBoard.new(board_size)
     @players = players
     @current_player = players.sample
     @result = nil
@@ -380,10 +380,34 @@ class Board
 
   def initialize(size)
     @size = size
-    reset
+    initialize_rows
   end
 
-  def reset
+  def display
+    rows.each do |row|
+      display_row(row)
+    end
+  end
+
+  def display_row(row)
+    print "|"
+    row.each { |square| print "#{square}|" }
+    print "\n"
+  end
+
+  private
+
+  def squares
+    rows.flatten
+  end
+
+  protected
+
+  attr_accessor :rows
+end
+
+class GameBoard < Board
+  def initialize_rows
     self.rows = empty_rows
   end
 
@@ -461,18 +485,6 @@ class Board
 
   public
 
-  def display
-    rows.each do |row|
-      display_row(row)
-    end
-  end
-
-  def display_row(row)
-    print "|"
-    row.each { |square| print "#{square}|" }
-    print "\n"
-  end
-
   # AUXILIARY METHODS
 
   def copy
@@ -502,23 +514,14 @@ class Board
     end
   end
 
-  def squares
-    rows.flatten
-  end
-
   def empty_rows
     (1..size).map { |_| (1..size).map { |_| Square.new } }
   end
-
-  protected
-
-  attr_accessor :rows
 end
 
 class TutorialBoard < Board
-  def initialize(size)
-    @size = size
-    @rows = numbered_rows
+  def initialize_rows
+    self.rows = numbered_rows
   end
 
   def numbered_rows

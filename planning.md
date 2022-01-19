@@ -141,3 +141,4 @@ the effect of each player taking some "response time" to take a turn
   - Also showed me how OOP's powerful collaborative abilities almost *sets you up* to handle complexity: A singular object (such as a *game*) can, by extension through collaboration, store so much data (such as individual *match* objects)
     - e.g. If I wanted to add history to the game
 - Still used temporary instance variables for separation though...
+- I decided to implement a generic `Board` superclass, with `GameBoard` and `TutorialBoard` subclasses. This felt like a natural hierarchical relationship.
